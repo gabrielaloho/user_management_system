@@ -1,14 +1,16 @@
-const app = require('./app');
+const { connectToMongoDB } = require('./config');
 const mongoose = require('mongoose');
-const config = require('./config');
+const app = require('./app');
 
 // Connect to MongoDB for testing
 beforeAll(async () => {
-  await mongoose.connect(config.database, { useNewUrlParser: true, useUnifiedTopology: true });
+  // Connect to MongoDB using the same function used in app.js
+  await connectToMongoDB();
 });
 
 // Close the MongoDB connection after testing
 afterAll(async () => {
+  // Close the MongoDB connection
   await mongoose.connection.close();
 });
 
