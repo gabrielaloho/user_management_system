@@ -35,22 +35,26 @@ const workerSchema = new mongoose.Schema({
   },
   // Gebracht von (Lvl1) (Brought by Level 1)
   gebrachtVonLvl1: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worker',
     default: null,
   },
   // Supervisor (Supervisor ID)
   supervisor: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worker',
     default: null,
   },
   // Lvl 2 (Level 2 ID, calculated)
   lvl2: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worker',
     default: null,
   },
   // Lvl 3 (Level 3 ID, calculated)
   lvl3: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worker',
     default: null,
   },
   // Superprov. berechtigt (Super commission permitted, boolean)
@@ -70,6 +74,20 @@ const workerSchema = new mongoose.Schema({
   iban: {
     type: String,
   },
+});
+
+// Middleware to calculate 'Lvl 2' and 'Lvl 3'
+workerSchema.pre('save', async function (next) {
+  if (this.gebrachtVonLvl1) {
+    const lvl1Worker = await this.model('Worker').findById(this.gebrachtVonLvl1);
+    if (lvl1Worker) {
+      this.lvl2 = lvl1Worker.gebrachtVonLvl1 || null;
+      if (lvl1Worker.lvl2) {
+        this.lvl3 = lvl1Worker.lvl2;
+      }
+    }
+  }
+  next();
 });
 
 const Worker = mongoose.model('Worker', workerSchema);
