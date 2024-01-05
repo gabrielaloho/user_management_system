@@ -1,32 +1,33 @@
-// This function is the endpoint's request handler.
-exports = function({ query, headers, body}, response) {
-    // Data can be extracted from the request as follows:
+exports = async function({ body }, response) {
+    const reqBody = EJSON.parse(body.text());
 
-    // Query params, e.g. '?arg1=hello&arg2=world' => {arg1: "hello", arg2: "world"}
-    const {arg1, arg2} = query;
+    // Extracting fields from the request body
+    const { firstName, lastName, email, broughtById } = reqBody;
 
-    // Headers, e.g. {"Content-Type": ["application/json"]}
-    const contentTypes = headers["Content-Type"];
+    // Validating required fields
+    if (!firstName || !lastName || !email || !broughtById) {
+        return response.badRequest("Missing required fields");
+    }
 
-    // Raw request body (if the client sent one).
-    // This is a binary object that can be accessed as a string using .text()
-    const reqBody = body;
+    const usersCollection = context.services.get("mongodb-atlas").db("dbname").collection("users");
 
-    console.log("arg1, arg2: ", arg1, arg2);
-    console.log("Content-Type:", JSON.stringify(contentTypes));
-    console.log("Request body:", reqBody);
+    // Creating a new user document
+    const user = {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        broughtByLevel1: broughtById,
+    };
 
-    // You can use 'context' to interact with other application features.
-    // Accessing a value:
-    // var x = context.values.get("value_name");
+    try {
+        // Inserting the user document into the MongoDB collection
+        const result = await usersCollection.insertOne(user);
 
-    // Querying a mongodb service:
-    // const doc = context.services.get("mongodb-atlas").db("dbname").collection("coll_name").findOne();
-
-    // Calling a function:
-    // const result = context.functions.execute("function_name", arg1, arg2);
-
-    // The return value of the function is sent as the response back to the client
-    // when the "Respond with Result" setting is set.
-    return  "Hello World!";
+        // Returning the newly created user's ID as a response
+        return { userId: result.insertedId.toString() };
+    } catch (e) {
+        // Handling any errors that may occur during the database operation
+        console.error("Error saving user:", e.toString());
+        return response.internalServerError("Error saving user");
+    }
 };
